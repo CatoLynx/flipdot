@@ -2,7 +2,7 @@
 
 import flipdot
 
-server = flipdot.FlipdotServer("/dev/ttyUSB0", 
+server = flipdot.FlipdotServer("/dev/ttyUSB1", 
     {
         'side': {
             'width': 84,

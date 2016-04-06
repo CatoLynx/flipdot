@@ -304,87 +304,97 @@ class FlipdotServer(object):
                 now_dt = datetime.datetime.now()
                 for display, message in self.current_message.items():
                     update_data = self.update_data[display]
-                    
-                    # Process configuration changes
-                    for key in update_data['config_keys_changed']:
-                        self.set_config(display, key, self.config[display][key])
-                    update_data['config_keys_changed'] = []
-                    
-                    # If only config changes were made and no message was sent, commit the changes and we're done
-                    if message is None:
-                        time.sleep(0.25)
-                        continue
-                    
-                    # A message has been changed
-                    if update_data['message_changed']:
+                    try:
+                        # Process configuration changes
+                        for key in update_data['config_keys_changed']:
+                            try:
+                                self.set_config(display, key, self.config[display][key])
+                            except MatrixError as err:
+                                print("Error setting '{0}' to '{1}' on display '{2}': {3}".format(key, self.config[display][key], display, err))
+                        update_data['config_keys_changed'] = []
+                        
+                        # If only config changes were made and no message was sent, commit the changes and we're done
+                        if message is None:
+                            time.sleep(0.25)
+                            continue
+                        
+                        # A message has been changed
+                        if update_data['message_changed']:
+                            if message['type'] == 'sequence':
+                                update_data['sequence_cur_pos'] = 0
+                                update_data['sequence_last_switched'] = now_time
+                            elif message['type'] == 'single':
+                                update_data['sequence_cur_pos'] = 0
+                                update_data['sequence_last_switched'] = None
+                        
+                        # If we have a sequence message, get the current sub-message and check if it has expired
                         if message['type'] == 'sequence':
-                            update_data['sequence_cur_pos'] = 0
-                            update_data['sequence_last_switched'] = now_time
-                        elif message['type'] == 'single':
-                            update_data['sequence_cur_pos'] = 0
-                            update_data['sequence_last_switched'] = None
-                    
-                    # If we have a sequence message, get the current sub-message and check if it has expired
-                    if message['type'] == 'sequence':
-                        actual_message = message['messages'][update_data['sequence_cur_pos']]
-                        sequence_needs_switching = now_time - update_data['sequence_last_switched'] >= (actual_message.get('duration', message['interval']) or message['interval'])
-                    else:
-                        actual_message = message
-                        sequence_needs_switching = False
-
-                    # If the submessage has expired, switch to the next one
-                    if sequence_needs_switching:
-                        if update_data['sequence_cur_pos'] == len(message['messages']) - 1:
-                            update_data['sequence_cur_pos'] = 0
+                            actual_message = message['messages'][update_data['sequence_cur_pos']]
+                            sequence_needs_switching = now_time - update_data['sequence_last_switched'] >= (actual_message.get('duration', message['interval']) or message['interval'])
                         else:
-                            update_data['sequence_cur_pos'] += 1
-                        actual_message = message['messages'][update_data['sequence_cur_pos']]
-                        update_data['sequence_last_switched'] = now_time
-                    
-                    # Register dynamic submessages
-                    if sequence_needs_switching or update_data['message_changed']:
-                        for index, submessage in enumerate(actual_message['submessages']):
-                            refresh_interval = submessage.get('refresh_interval', 0)
-                            if refresh_interval:
-                                update_data['dynamic_submessages'][index] = [refresh_interval, now_time]
+                            actual_message = message
+                            sequence_needs_switching = False
+
+                        # If the submessage has expired, switch to the next one
+                        if sequence_needs_switching:
+                            if update_data['sequence_cur_pos'] == len(message['messages']) - 1:
+                                update_data['sequence_cur_pos'] = 0
                             else:
-                                try:
-                                    update_data['dynamic_submessages'].pop(index)
-                                except KeyError:
-                                    pass
-                    
-                    # Check if any dynamic messages need to be updated (the first message to need updating causes all messages to be updated)
-                    dynamic_message_changed = False
-                    if update_data['dynamic_submessages']:
-                        for index, (refresh_interval, last_refresh) in update_data['dynamic_submessages'].items():
-                            if refresh_interval == 'minute':
-                                if now_dt.minute != last_check_dt.minute:
+                                update_data['sequence_cur_pos'] += 1
+                            actual_message = message['messages'][update_data['sequence_cur_pos']]
+                            update_data['sequence_last_switched'] = now_time
+                        
+                        # Register dynamic submessages
+                        if sequence_needs_switching or update_data['message_changed']:
+                            for index, submessage in enumerate(actual_message['submessages']):
+                                refresh_interval = submessage.get('refresh_interval', 0)
+                                if refresh_interval:
+                                    update_data['dynamic_submessages'][index] = [refresh_interval, now_time]
+                                else:
+                                    try:
+                                        update_data['dynamic_submessages'].pop(index)
+                                    except KeyError:
+                                        pass
+                        
+                        # Check if any dynamic messages need to be updated (the first message to need updating causes all messages to be updated)
+                        dynamic_message_changed = False
+                        if update_data['dynamic_submessages']:
+                            for index, (refresh_interval, last_refresh) in update_data['dynamic_submessages'].items():
+                                if refresh_interval == 'minute':
+                                    if now_dt.minute != last_check_dt.minute:
+                                        dynamic_message_changed = True
+                                        break
+                                elif now_time - last_refresh >= refresh_interval:
                                     dynamic_message_changed = True
                                     break
-                            elif now_time - last_refresh >= refresh_interval:
-                                dynamic_message_changed = True
-                                break
-                    
-                    # Determine whether the bitmap needs to be refreshed (Message changed, dynamic message needs refresh or submessage expired)
-                    needs_refresh = update_data['message_changed'] or dynamic_message_changed or sequence_needs_switching
-                    #print(update_data['message_changed'], dynamic_message_changed, sequence_needs_switching)
+                        
+                        # Determine whether the bitmap needs to be refreshed (Message changed, dynamic message needs refresh or submessage expired)
+                        needs_refresh = update_data['message_changed'] or dynamic_message_changed or sequence_needs_switching
+                        #print(update_data['message_changed'], dynamic_message_changed, sequence_needs_switching)
 
-                    # If a refresh is required, determine what to do
-                    if needs_refresh:
-                        for index, submessage in enumerate(actual_message['submessages']):
-                            if submessage['type'] == 'bitmap':
-                                self.displays[display]['graphics'].bitmap(self.displays[display]['graphics'].bitmap_to_image(submessage['bitmap']), x = 0, y = 0)
-                            elif submessage['type'] == 'graphics':
-                                func = getattr(self.displays[display]['graphics'], submessage['func'])
-                                try:
-                                    func(**submessage['params'])
-                                except:
-                                    traceback.print_exc()
-                                if index in update_data['dynamic_submessages']:
-                                    update_data['dynamic_submessages'][index][1] = now_time
-                        self.current_bitmap[display] = self.displays[display]['graphics'].get_bitmap()
-                        self.displays[display]['graphics'].commit()
-                    update_data['message_changed'] = False
+                        # If a refresh is required, determine what to do
+                        if needs_refresh:
+                            for index, submessage in enumerate(actual_message['submessages']):
+                                if submessage['type'] == 'bitmap':
+                                    self.displays[display]['graphics'].bitmap(self.displays[display]['graphics'].bitmap_to_image(submessage['bitmap']), x = 0, y = 0)
+                                elif submessage['type'] == 'graphics':
+                                    func = getattr(self.displays[display]['graphics'], submessage['func'])
+                                    try:
+                                        func(**submessage['params'])
+                                    except:
+                                        traceback.print_exc()
+                                    if index in update_data['dynamic_submessages']:
+                                        update_data['dynamic_submessages'][index][1] = now_time
+                            self.current_bitmap[display] = self.displays[display]['graphics'].get_bitmap()
+                            try:
+                                self.displays[display]['graphics'].commit()
+                            except MatrixError as err:
+                                print("Error committing changes to display '{0}': {1}".format(display, err))
+                        update_data['message_changed'] = False
+                    except Exception as err:
+                        traceback.print_exc()
+                    finally:
+                        update_data['message_changed'] = False
                 last_check_dt = now_dt
                 time.sleep(0.25)
             except KeyboardInterrupt:

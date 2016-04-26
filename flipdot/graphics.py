@@ -105,7 +105,7 @@ class FlipdotGraphics(object):
     def get_imagefont(self, font, size = None):
         try:
             # font parameter as ttf filename
-            return ImageFont.truetype(font, size)
+            return ImageFont.truetype(font, size), True
         except OSError:
             pass
 
@@ -114,7 +114,7 @@ class FlipdotGraphics(object):
             _font = font
             if not _font.endswith(".ttf"):
                 _font += ".ttf"
-            return ImageFont.truetype(os.path.join(self.FONT_DIR, _font), size)
+            return ImageFont.truetype(os.path.join(self.FONT_DIR, _font), size), True
         except OSError:
             pass
 
@@ -123,13 +123,13 @@ class FlipdotGraphics(object):
             _font = font
             if not _font.endswith(".pil"):
                 _font += ".pil"
-            return ImageFont.load(os.path.join(self.FONT_DIR, _font))
+            return ImageFont.load(os.path.join(self.FONT_DIR, _font)), False
         except OSError:
             pass
 
         try:
             # font parameter as font name
-            return ImageFont.truetype(self.get_font(font), size)
+            return ImageFont.truetype(self.get_font(font), size), True
         except (OSError, ValueError):
             pass
 
@@ -185,15 +185,18 @@ class FlipdotGraphics(object):
         if timestring:
             text = time.strftime(text)
 
-        textfont = self.get_imagefont(font, size)
+        textfont, truetype = self.get_imagefont(font, size)
         approx_tsize = textfont.getsize(text)
-        # Generate separate image for text (so size can be accurately determined, as opposed to font.getsize)
         text_img = Image.new('RGBA', approx_tsize, (0, 0, 0, 0))
         text_draw = ImageDraw.Draw(text_img)
         text_draw.fontmode = "1"
         text_draw.text((0, 0), text, color, font = textfont)
-        text_img = text_img.crop(text_img.getbbox())
-        twidth, theight = text_img.size
+        if truetype:
+            # font.getsize is inaccurate on non-pixel fonts
+            text_img = text_img.crop(text_img.getbbox())
+            twidth, theight = text_img.size
+        else:
+            twidth, theight = approx_tsize
 
         if x is not None:
             textx = x
@@ -226,7 +229,7 @@ class FlipdotGraphics(object):
         if timestring:
             text = time.strftime(text)
 
-        textfont = self.get_imagefont(font, size)
+        textfont, truetype = self.get_imagefont(font, size)
         char_imgs = []
         for char in text:
             approx_csize = textfont.getsize(char)

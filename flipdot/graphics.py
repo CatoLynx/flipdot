@@ -37,6 +37,18 @@ class FlipdotGraphics(object):
         if self.verbose:
             print(text)
 
+    def get_bitmap(self):
+        return self.image_to_bitmap(self.img)
+
+    def init_image(self):
+        self.img = Image.new('L', (self.controller.width, self.controller.height), 'black')
+        self.draw = ImageDraw.Draw(self.img)
+        self.draw.fontmode = "1"
+
+    def commit(self):
+        self.controller.send_bitmap(self.get_bitmap())
+        self.init_image()
+
     def _nice_font_name(self, name):
         name = name.lower()
         name = name.replace(",", " ")
@@ -166,7 +178,7 @@ class FlipdotGraphics(object):
         self.controller.send_bitmap(self.get_bitmap())
         self.init_image()
 
-    def text(self, text, font = None, size = 20, halign = None, valign = None, x = None, y = None, angle = 0, timestring = False):
+    def text(self, text, font = None, size = 20, halign = None, valign = None, x = None, y = None, angle = 0, color = 'white', timestring = False):
         halign = halign or 'center'
         valign = valign or 'middle'
         font = font or self.DEFAULT_FONT
@@ -179,7 +191,7 @@ class FlipdotGraphics(object):
         text_img = Image.new('RGBA', approx_tsize, (0, 0, 0, 0))
         text_draw = ImageDraw.Draw(text_img)
         text_draw.fontmode = "1"
-        text_draw.text((0, 0), text, 'white', font = textfont)
+        text_draw.text((0, 0), text, color, font = textfont)
         text_img = text_img.crop(text_img.getbbox())
         twidth, theight = text_img.size
 
@@ -207,7 +219,7 @@ class FlipdotGraphics(object):
 
         self.img.paste(text_img, (textx, texty), text_img)
 
-    def vertical_text(self, text, font = None, size = 20, halign = None, valign = None, char_align = 'center', x = None, y = None, spacing = 2, angle = 0, timestring = False):
+    def vertical_text(self, text, font = None, size = 20, halign = None, valign = None, char_align = 'center', x = None, y = None, spacing = 2, angle = 0, color = 'white', timestring = False):
         halign = halign or 'center'
         valign = valign or 'middle'
         font = font or self.DEFAULT_FONT
@@ -222,7 +234,7 @@ class FlipdotGraphics(object):
             char_img = Image.new('RGBA', approx_csize, (0, 0, 0, 0))
             char_draw = ImageDraw.Draw(char_img)
             char_draw.fontmode = "1"
-            char_draw.text((0, 0), char, 'white', font = textfont)
+            char_draw.text((0, 0), char, color, font = textfont)
             char_img = char_img.rotate(90, expand = True)
             char_img = char_img.crop(char_img.getbbox())
             char_imgs.append(char_img)
@@ -311,6 +323,12 @@ class FlipdotGraphics(object):
 
         self.img.paste(img, (bitmapx, bitmapy), img)
 
+    def line(self, points, color = 'white', width = 1):
+        self.draw.line(points, fill = color, width = width)
+
+    def rectangle(self, points, color = 'white', fill = False):
+        self.draw.rectangle(points, fill = color if fill else None, outline = color)
+
     def binary_clock(self, block_width = 3, block_height = 3, block_spacing_x = 1, block_spacing_y = 1, **kwargs):
         width = 6*block_width + 5*block_spacing_x
         height = 2*block_height + block_spacing_y
@@ -359,3 +377,11 @@ class FlipdotGraphics(object):
         draw.line((center, (minute_hand[0]+center[0], minute_hand[1]+center[1])), fill = 'white')
 
         self.bitmap(img, **kwargs)
+
+    def black(self):
+        img = Image.new('RGBA', (self.controller.width, self.controller.height), (0, 0, 0, 0))
+        self.bitmap(img)
+
+    def yellow(self):
+        img = Image.new('RGBA', (self.controller.width, self.controller.height), (255, 255, 255, 255))
+        self.bitmap(img)

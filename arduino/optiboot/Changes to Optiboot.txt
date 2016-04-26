@@ -1,0 +1,6 @@
+This version of optiboot is slightly altered for use in the flipdot system.
+The changes are:
+
+- Watchdog resets cause the device to wait for sketch upload
+- LED flashes disabled
+- Baud rate for programming changed from 115200 to 57600

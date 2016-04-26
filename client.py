@@ -2,4 +2,4 @@
 
 import flipdot
 
-client = flipdot.FlipdotClient("localhost")
+c = flipdot.FlipdotClient("localhost")

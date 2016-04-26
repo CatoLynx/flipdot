@@ -2,3 +2,4 @@ __pycache__/
 *.py[cod]
 .server_config
 owm_apikey.py
+*.hex

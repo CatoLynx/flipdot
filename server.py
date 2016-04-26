@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
 
+import argparse
 import flipdot
 
-server = flipdot.FlipdotServer("/dev/ttyUSB1", 
+parser = argparse.ArgumentParser()
+parser.add_argument('-p', '--port', type = str, required = True)
+args = parser.parse_args()
+
+server = flipdot.FlipdotServer(args.port, 
     {
         'side': {
             'width': 84,

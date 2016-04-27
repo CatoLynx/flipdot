@@ -23,7 +23,7 @@ import time
 from PIL import Image, ImageDraw, ImageFont
 
 class FlipdotGraphics(object):
-    DEFAULT_FONT = "Arial Bold"
+    DEFAULT_FONT = "FIS_20"
     FONT_DIR = "fonts"
 
     def __init__(self, controller, verbose = False):

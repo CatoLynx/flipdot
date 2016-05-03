@@ -196,7 +196,10 @@ class FlipdotGraphics(object):
             text_img = text_img.crop(text_img.getbbox())
             twidth, theight = text_img.size
         else:
-            twidth, theight = approx_tsize
+            # only crop horizontally with pixel fonts
+            bbox = text_img.getbbox()
+            text_img = text_img.crop((bbox[0], 0, bbox[2], text_img.size[1]))
+            twidth, theight = text_img.size
 
         if x is not None:
             textx = x

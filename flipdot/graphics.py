@@ -178,9 +178,50 @@ class FlipdotGraphics(object):
         self.controller.send_bitmap(self.get_bitmap())
         self.init_image()
 
-    def text(self, text, font = None, size = 20, halign = None, valign = None, x = None, y = None, angle = 0, color = 'white', timestring = False):
+    def bitmap(self, image, halign = None, valign = None, left = None, center = None, right = None, top = None, middle = None, bottom = None, angle = 0):
         halign = halign or 'center'
         valign = valign or 'middle'
+        if isinstance(image, Image.Image):
+            img = image
+        else:
+            img = Image.open(image).convert('RGBA')
+
+        if angle:
+            img = img.rotate(angle, expand = True)
+
+        bwidth, bheight = img.size
+
+        if left is not None:
+            bitmapx = left
+        elif center is not None:
+            bitmapx = round(center - (bwidth/2))
+        elif right is not None:
+            bitmapx = right - bwidth + 1
+        else:
+            if halign == 'center':
+                bitmapx = round((self.controller.width - bwidth) / 2)
+            elif halign == 'right':
+                bitmapx = self.controller.width - bwidth
+            else:
+                bitmapx = 0
+
+        if top is not None:
+            bitmapy = top
+        elif middle is not None:
+            bitmapy = round(middle - (bheight/2))
+        elif bottom is not None:
+            bitmapy = bottom - bheight + 1
+        else:
+            if valign == 'middle':
+                bitmapy = round((self.controller.height - bheight) / 2)
+            elif valign == 'bottom':
+                bitmapy = self.controller.height - bheight
+            else:
+                bitmapy = 0
+
+        self.img.paste(img, (bitmapx, bitmapy), img)
+
+    def text(self, text, font = None, size = 20, color = 'white', timestring = False, **kwargs):
         font = font or self.DEFAULT_FONT
         if timestring:
             text = time.strftime(text)
@@ -194,40 +235,13 @@ class FlipdotGraphics(object):
         if truetype:
             # font.getsize is inaccurate on non-pixel fonts
             text_img = text_img.crop(text_img.getbbox())
-            twidth, theight = text_img.size
         else:
             # only crop horizontally with pixel fonts
             bbox = text_img.getbbox()
             text_img = text_img.crop((bbox[0], 0, bbox[2], text_img.size[1]))
-            twidth, theight = text_img.size
+        self.bitmap(text_img, **kwargs)
 
-        if x is not None:
-            textx = x
-        else:
-            if halign == 'center':
-                textx = int((self.controller.width - twidth) / 2)
-            elif halign == 'right':
-                textx = int(self.controller.width - twidth)
-            else:
-                textx = 0
-        if y is not None:
-            texty = y
-        else:
-            if valign == 'middle':
-                texty = int((self.controller.height - theight) / 2)
-            elif valign == 'bottom':
-                texty = int(self.controller.height - theight)
-            else:
-                texty = 0
-
-        if angle:
-            text_img = text_img.rotate(angle, expand = True)
-
-        self.img.paste(text_img, (textx, texty), text_img)
-
-    def vertical_text(self, text, font = None, size = 20, halign = None, valign = None, char_align = 'center', x = None, y = None, spacing = 2, angle = 0, color = 'white', timestring = False):
-        halign = halign or 'center'
-        valign = valign or 'middle'
+    def vertical_text(self, text, font = None, size = 20, char_align = 'center', spacing = 2, color = 'white', timestring = False, **kwargs):
         font = font or self.DEFAULT_FONT
         if timestring:
             text = time.strftime(text)
@@ -270,64 +284,7 @@ class FlipdotGraphics(object):
 
             text_img.paste(char_img, (xpos, ypos), char_img)
             xpos += cwidth + spacing
-
-        if x is not None:
-            textx = x
-        else:
-            if halign == 'center':
-                textx = int((self.controller.width - twidth) / 2)
-            elif halign == 'right':
-                textx = int(self.controller.width - twidth)
-            else:
-                textx = 0
-        if y is not None:
-            texty = y
-        else:
-            if valign == 'middle':
-                texty = int((self.controller.height - theight) / 2)
-            elif valign == 'bottom':
-                texty = int(self.controller.height - theight)
-            else:
-                texty = 0
-
-        if angle:
-            text_img = text_img.rotate(angle, expand = True)
-
-        self.img.paste(text_img, (textx, texty), text_img)
-
-    def bitmap(self, image, halign = None, valign = None, x = None, y = None, angle = 0):
-        halign = halign or 'center'
-        valign = valign or 'middle'
-        if isinstance(image, Image.Image):
-            img = image
-        else:
-            img = Image.open(image).convert('RGBA')
-
-        if angle:
-            img = img.rotate(angle, expand = True)
-
-        bwidth, bheight = img.size
-
-        if x is not None:
-            bitmapx = x
-        else:
-            if halign == 'center':
-                bitmapx = int((self.controller.width - bwidth) / 2)
-            elif halign == 'right':
-                bitmapx = int(self.controller.width - bwidth)
-            else:
-                bitmapx = 0
-        if y is not None:
-            bitmapy = y
-        else:
-            if valign == 'middle':
-                bitmapy = int((self.controller.height - bheight) / 2)
-            elif valign == 'bottom':
-                bitmapy = int(self.controller.height - bheight)
-            else:
-                bitmapy = 0
-
-        self.img.paste(img, (bitmapx, bitmapy), img)
+        self.bitmap(text_img, **kwargs)
 
     def line(self, points, color = 'white', width = 1):
         self.draw.line(points, fill = color, width = width)

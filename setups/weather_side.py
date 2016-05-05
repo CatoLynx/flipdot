@@ -45,8 +45,8 @@ for div in divs:
 
 if warnings:
     client.set_inverting('side', True)
-    client.add_graphics_submessage('side', 'text', text = warnings[0]['what'].upper(), font = "Luminator7_Bold", halign = 'center', y = 1)
-    client.add_graphics_submessage('side', 'text', text = warnings[0]['level'].upper(), font = "Luminator5_Bold", halign = 'center', y = 10)
+    client.add_graphics_submessage('side', 'text', text = warnings[0]['what'].upper(), font = "Luminator7_Bold", halign = 'center', top = 1)
+    client.add_graphics_submessage('side', 'text', text = warnings[0]['level'].upper(), font = "Luminator5_Bold", halign = 'center', top = 10)
 else:
     # Get weather
     owm = pyowm.OWM(API_KEY, language = 'de')
@@ -59,8 +59,8 @@ else:
     wind = w.get_wind()['speed'] * 3.6 # Speed is in m/sec
 
     client.set_inverting('side', False)
-    client.add_graphics_submessage('side', 'bitmap', image = "bitmaps/weather_icons/{0}.png".format(icon), x = 0, y = 0)
-    client.add_graphics_submessage('side', 'text', text = status, font = "Flipdot8_Narrow", x = 18, y = 0)
-    client.add_graphics_submessage('side', 'text', text = "{0:.1f}°C {1}% {2:.0f}km/h".format(temp, humidity, wind), font = "Flipdot8_Narrow", x = 18, y = 9)
+    client.add_graphics_submessage('side', 'bitmap', image = "bitmaps/weather_icons/{0}.png".format(icon), left = 0, top = 0)
+    client.add_graphics_submessage('side', 'text', text = status, font = "Flipdot8_Narrow", left = 18, top = 0)
+    client.add_graphics_submessage('side', 'text', text = "{0:.1f}°C {1}% {2:.0f}km/h".format(temp, humidity, wind), font = "Flipdot8_Narrow", left = 18, top = 9)
 
 client.commit()

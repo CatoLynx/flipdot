@@ -4,7 +4,7 @@ import flipdot
 
 client = flipdot.FlipdotClient("localhost")
 
-client.add_graphics_submessage('panel', 'text', text = "%H%M", timestring = True, font = "FIS_20", x = 1, refresh_interval = 'minute')
+client.add_graphics_submessage('panel', 'text', text = "%H%M", timestring = True, font = "FIS_20", left = 1, refresh_interval = 'minute')
 
 #client.add_graphics_submessage('side', 'text', text = "%d.%m.%y", timestring = True, font = "Itty", size = 4, x = 0, y = 0, refresh_interval = 'minute')
 #client.add_graphics_submessage('side', 'binary_clock', block_width = 4, block_height = 4, x = 0, y = 7, refresh_interval = 'minute')

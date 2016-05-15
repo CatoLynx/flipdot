@@ -111,6 +111,10 @@ class FlipdotController(object):
         self.prepare_message(0xA3, 0x01 if state else 0x00)
         return self.communicate()
 
+    def set_quick_update(self, state):
+        self.prepare_message(0xA4, 0x01 if state else 0x00)
+        return self.communicate()
+
 class DummyFlipdotController(object):
     """
     A dummy class to use when you want to use FlipdotGraphics, but aren't directly connected to a flipdot controller.

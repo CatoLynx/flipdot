@@ -109,7 +109,8 @@ class FlipdotServer(object):
             self.config[id] = {
                 'backlight': False,
                 'inverting': False,
-                'active': True
+                'active': True,
+                'quick_update': True
             }
             self.update_data[id] = {
                 'config_keys_changed': [],
@@ -558,3 +559,9 @@ class FlipdotClient(object):
         state: True / False
         """
         return self.set_config(display, {'active': state})
+    
+    def set_quick_update(self, display, state):
+        """
+        state: True / False
+        """
+        return self.set_config(display, {'quick_update': state})

@@ -32,16 +32,22 @@ page.encoding = 'UTF-8'
 tree = html.fromstring(page.content)
 divs = tree.xpath('//*[@id="content"]/div')
 warnings = []
+forewarnings = []
 for div in divs:
     # Only process divs that contain warnings
     warning = div.xpath('div[1]/div[1]/div[1]')
     if not warning:
         continue
-    match = re.match(r"Unwetterwarnung Stufe (?P<level>\w+) vor (?P<what>\w+)", warning[0].text)
-    if not match:
+    match = re.match(r"Unwetterwarnung Stufe (?P<level>\w+) vor (?P<what>\w+)", warning[0].text_content())
+    match_pre = re.match(r"Vorwarnung vor (?P<what>\w+), Warnstufe (?P<level>\w+) möglich", warning[0].text_content())
+    if match:
+        data = match.groupdict()
+        warnings.append(data)
+    elif match_pre:
+        data = match_pre.groupdict()
+        forewarnings.append(data)
+    else:
         continue
-    data = match.groupdict()
-    warnings.append(data)
 
 if warnings:
     client.set_inverting('side', True)
@@ -52,9 +58,9 @@ else:
     owm = pyowm.OWM(API_KEY, language = 'de')
     obs = owm.weather_at_id(2872493)
     w = obs.get_weather()
-    icon = w.get_weather_icon_name()
+    icon = 'warning' if forewarnings else w.get_weather_icon_name()
     temp = w.get_temperature('celsius')['temp']
-    status = _prepare_status(w.get_detailed_status())
+    status = "{what} {level}".format(**forewarnings[0]) if forewarnings else _prepare_status(w.get_detailed_status())
     humidity = w.get_humidity()
     wind = w.get_wind()['speed'] * 3.6 # Speed is in m/sec
 
